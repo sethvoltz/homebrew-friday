@@ -28,8 +28,9 @@ class Friday < Formula
   # Optional but recommended: Cloudflare Tunnel for public reachability.
   # cloudflared runs as its own brew service
   # (`brew services start cloudflared`); Friday's supervisor doesn't
-  # manage its lifecycle.
-  depends_on "cloudflare/cloudflare/cloudflared" => :recommended
+  # manage its lifecycle. The formula lives in homebrew/core, no tap
+  # required.
+  depends_on "cloudflared" => :recommended
 
   def install
     # Build Friday in the source tree, then install the whole repo to
