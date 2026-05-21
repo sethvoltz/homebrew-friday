@@ -37,7 +37,15 @@ class Friday < Formula
     # libexec/ so the supervisor's path-resolution (which walks up to
     # the repo root via pnpm-workspace.yaml) works identically to the
     # dev checkout.
-    system "pnpm", "install", "--prod", "--frozen-lockfile"
+    #
+    # We install with devDependencies because the build step needs
+    # `tsc` (TypeScript compiler is a devDep at the root) and
+    # `vite-build` (devDep at the dashboard). After `pnpm -r build`
+    # we could `pnpm prune --prod` to shrink, but the savings are
+    # marginal (~tens of MB) compared to the libexec total, and
+    # pruning then re-installing on `brew upgrade` adds another
+    # several minutes. Skip the prune for v1.
+    system "pnpm", "install", "--frozen-lockfile"
     system "pnpm", "-r", "build"
 
     libexec.install Dir["*"]
