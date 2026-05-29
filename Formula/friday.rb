@@ -50,6 +50,32 @@ class Friday < Formula
 
     libexec.install Dir["*"]
 
+    # Drop the prebuilt @oxfmt native addon from the installed tree.
+    #
+    # @oxfmt/binding-darwin-arm64 ships a Mach-O .node bundle whose
+    # dylib ID Homebrew's post-install `fix_dynamic_linkage` cannot
+    # rewrite ("Failed changing dylib ID" -> "Failed to fix install
+    # linkage"), aborting the link step. Homebrew offers no directive to
+    # exclude individual files from linkage fixing
+    # (https://discourse.brew.sh/t/how-to-prevent-dylib-from-linkage-fixing/3843),
+    # so the offending Mach-O must simply not be present in the keg.
+    #
+    # Safe to remove: oxfmt is a transitive prod dep of @rocicorp/zero
+    # only via its `ast-to-zql` / `analyze-query` codegen CLIs. The
+    # zero-cache server boot path (cli.js -> server/runner/main.js) never
+    # imports oxfmt, run-ast, ast-to-zql, or analyze, and Friday's own
+    # daemon/dashboard dist do not reference oxfmt either. The other
+    # eight prebuilt .node addons in the tree (zero-sqlite3, sharp,
+    # lightningcss, rolldown, etc.) relocate cleanly and are left intact.
+    #
+    # Glob + only-if-present so this no-ops gracefully if pnpm's layout
+    # or the arch suffix changes on a future upgrade. Deleting just the
+    # real .node (not the binding dir) leaves pnpm's symlinks dangling to
+    # a nonexistent file, which the Mach-O scanner ignores.
+    Dir.glob(libexec/"node_modules/.pnpm/@oxfmt+binding-*/**/oxfmt.*.node").each do |f|
+      rm f
+    end
+
     # bin wrappers. `write_env_script` generates a shell shim that
     # exec's the target with the supplied env. We extend PATH so the
     # supervisor (and its children) can find `pnpm`, `node`,
